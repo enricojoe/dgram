@@ -30,8 +30,8 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     : null
 
   return (
-    <div className="mx-auto mt-20 w-full max-w-sm rounded-lg border border-gray-200 p-6 shadow-sm">
-      <h1 className="mb-4 text-xl font-semibold text-gray-800">
+    <div className="mx-auto mt-20 w-full max-w-sm rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <h1 className="mb-4 text-xl font-semibold text-gray-800 dark:text-gray-100">
         {mode === 'login' ? 'Log in' : 'Create account'}
       </h1>
 
@@ -42,7 +42,7 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded border border-gray-300 px-3 py-2 text-sm"
+          className="rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
         />
         <input
           type="password"
@@ -51,10 +51,10 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           placeholder="Password (min 6 chars)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded border border-gray-300 px-3 py-2 text-sm"
+          className="rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
         />
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <button
           type="submit"
@@ -69,7 +69,7 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-500">
+      <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
         {mode === 'login' ? (
           <>
             No account?{' '}

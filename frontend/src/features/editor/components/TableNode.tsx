@@ -10,6 +10,7 @@ import {
 } from '@/lib/schemaFlow'
 import { useEditorStore } from '../store/editorStore'
 import { useEditorMode } from '../editorMode'
+import { columnTypes } from '@/lib/columnTypes'
 import {
   addColumn,
   deleteColumn,
@@ -29,6 +30,7 @@ import {
 export default function TableNode({ data }: NodeProps<TableNodeType>) {
   const { table } = data
   const applySchemaEdit = useEditorStore((s) => s.applySchemaEdit)
+  const dialect = useEditorStore((s) => s.dialect)
   const { readOnly } = useEditorMode()
 
   return (
@@ -92,24 +94,26 @@ export default function TableNode({ data }: NodeProps<TableNodeType>) {
             className={`min-w-0 flex-1 ${col.pk ? 'font-medium' : ''}`}
           />
 
-          <EditableText
+          <TypeSelect
             value={col.type}
+            options={columnTypes(dialect)}
             disabled={readOnly}
-            onCommit={(type) =>
+            onChange={(type) =>
               applySchemaEdit((s) => updateColumn(s, table.name, col.name, { type }))
             }
-            className="w-20 shrink-0 text-right text-xs text-gray-500"
           />
 
           {!readOnly && (
-            <button
-              type="button"
-              title="Delete column"
-              className="nodrag absolute right-0 hidden pr-1 text-gray-400 hover:text-red-600 group-hover:block"
-              onClick={() => applySchemaEdit((s) => deleteColumn(s, table.name, col.name))}
-            >
-              ✕
-            </button>
+            <span className="flex w-4 shrink-0 justify-center">
+              <button
+                type="button"
+                title="Delete column"
+                className="nodrag invisible text-gray-400 hover:text-red-600 group-hover:visible"
+                onClick={() => applySchemaEdit((s) => deleteColumn(s, table.name, col.name))}
+              >
+                ✕
+              </button>
+            </span>
           )}
 
           <Handle
@@ -131,6 +135,49 @@ export default function TableNode({ data }: NodeProps<TableNodeType>) {
         </button>
       )}
     </div>
+  )
+}
+
+/**
+ * TypeSelect is the column type picker. In edit mode it's a fixed-width dropdown
+ * of the dialect's common types; the column's current type is always included so
+ * parameterized/custom types (e.g. `varchar(100)`) are never lost. In read-only
+ * (share) view it renders as plain text.
+ */
+function TypeSelect({
+  value,
+  options,
+  onChange,
+  disabled = false,
+}: {
+  value: string
+  options: string[]
+  onChange: (next: string) => void
+  disabled?: boolean
+}) {
+  if (disabled) {
+    return (
+      <span className="w-20 shrink-0 truncate text-right text-xs text-gray-500">
+        {value}
+      </span>
+    )
+  }
+
+  const opts = options.includes(value) ? options : [value, ...options]
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => e.target.value !== value && onChange(e.target.value)}
+      title={value}
+      className="nodrag w-20 shrink-0 cursor-pointer truncate rounded bg-transparent text-right text-xs text-gray-500 outline-none hover:text-gray-700"
+    >
+      {opts.map((t) => (
+        <option key={t} value={t}>
+          {t}
+        </option>
+      ))}
+    </select>
   )
 }
 

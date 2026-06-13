@@ -14,3 +14,6 @@ DDL-to-Diagram app (like dbdiagram.io). Architecture plan:
 **All phases complete (2026-06-13).** DGram is a working full-stack DDL→diagram
 app: dual-dialect parser, bidirectional editing, JWT auth, persistence, export
 (SQL/PNG), public share links.
+
+## Post-launch
+- [x] Frontend modernization + profile feature (2026-06-14) → `tasks/plans/06-frontend-modernization.md`

@@ -5,6 +5,7 @@ import type { Dialect } from './schema'
 export interface User {
   id: number
   email: string
+  displayName: string
   createdAt: string
 }
 

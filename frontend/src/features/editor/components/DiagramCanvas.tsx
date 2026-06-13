@@ -36,6 +36,7 @@ export default function DiagramCanvas({ readOnly = false }: { readOnly?: boolean
   const schema = useEditorStore((s) => s.schema)
   const applySchemaEdit = useEditorStore((s) => s.applySchemaEdit)
   const setNodePosition = useEditorStore((s) => s.setNodePosition)
+  const commitLayout = useEditorStore((s) => s.commitLayout)
 
   const laidOut = useMemo(() => {
     const { nodes, edges } = schemaToFlow(schema)
@@ -59,6 +60,9 @@ export default function DiagramCanvas({ readOnly = false }: { readOnly?: boolean
   const onConnect = useCallback(
     (c: Connection) => {
       if (!c.source || !c.target) return
+      // Snapshot current positions so the re-layout triggered by the new edge
+      // keeps every table where it is instead of letting dagre reflow them.
+      commitLayout(Object.fromEntries(nodes.map((n) => [n.id, n.position])))
       applySchemaEdit((s) =>
         addRef(s, {
           fromTable: c.source!,
@@ -68,7 +72,7 @@ export default function DiagramCanvas({ readOnly = false }: { readOnly?: boolean
         }),
       )
     },
-    [applySchemaEdit],
+    [applySchemaEdit, commitLayout, nodes],
   )
 
   return (
@@ -106,6 +110,52 @@ export default function DiagramCanvas({ readOnly = false }: { readOnly?: boolean
   )
 }
 
+// Properties whose computed value can be an oklch() color.
+const COLOR_PROPS = [
+  'color',
+  'backgroundColor',
+  'borderTopColor',
+  'borderRightColor',
+  'borderBottomColor',
+  'borderLeftColor',
+  'outlineColor',
+  'fill',
+  'stroke',
+] as const
+
+// Reuse one canvas: assigning any CSS color to fillStyle normalizes it to
+// rgb()/#hex, which is how we convert oklch() to something html-to-image reads.
+const colorCanvas = document.createElement('canvas').getContext('2d')
+const toRgb = (value: string): string => {
+  if (!colorCanvas) return value
+  colorCanvas.fillStyle = '#000'
+  colorCanvas.fillStyle = value
+  return colorCanvas.fillStyle
+}
+
+/**
+ * Tailwind v4's default palette uses the oklch() color space, which
+ * html-to-image cannot parse and renders as black. Walk the subtree, convert
+ * any computed oklch colors to rgb, and pin them as inline styles so they win
+ * during capture. Returns a function that restores the original inline styles.
+ */
+function neutralizeOklch(root: HTMLElement): () => void {
+  const restores: Array<() => void> = []
+  for (const el of [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))]) {
+    const computed = getComputedStyle(el)
+    for (const prop of COLOR_PROPS) {
+      const value = computed[prop as keyof CSSStyleDeclaration] as string
+      if (typeof value === 'string' && value.includes('oklch')) {
+        const previous = el.style.getPropertyValue(prop)
+        const priority = el.style.getPropertyPriority(prop)
+        el.style.setProperty(prop, toRgb(value))
+        restores.push(() => el.style.setProperty(prop, previous, priority))
+      }
+    }
+  }
+  return () => restores.forEach((restore) => restore())
+}
+
 /** Exports the current diagram as a PNG. Must render inside <ReactFlow>. */
 function ExportPngButton() {
   const { getNodes } = useReactFlow()
@@ -119,6 +169,7 @@ function ExportPngButton() {
     const el = document.querySelector('.react-flow__viewport') as HTMLElement | null
     if (!el) return
 
+    const restore = neutralizeOklch(el)
     toPng(el, {
       backgroundColor: '#ffffff',
       width,
@@ -128,12 +179,14 @@ function ExportPngButton() {
         height: `${height}px`,
         transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
       },
-    }).then((dataUrl) => {
-      const a = document.createElement('a')
-      a.download = 'diagram.png'
-      a.href = dataUrl
-      a.click()
     })
+      .then((dataUrl) => {
+        const a = document.createElement('a')
+        a.download = 'diagram.png'
+        a.href = dataUrl
+        a.click()
+      })
+      .finally(restore)
   }, [getNodes])
 
   return (

@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/enricojoe/dgram/backend/internal/model"
 	"github.com/enricojoe/dgram/backend/internal/repository"
@@ -104,4 +105,28 @@ func (s *AuthService) issue(userID int64) (Tokens, error) {
 // GetUser returns the user with the given id.
 func (s *AuthService) GetUser(id int64) (model.User, error) {
 	return s.users.GetByID(id)
+}
+
+// UpdateDisplayName updates the user's display name and returns the updated user.
+func (s *AuthService) UpdateDisplayName(id int64, displayName string) (model.User, error) {
+	return s.users.UpdateDisplayName(id, strings.TrimSpace(displayName))
+}
+
+// UpdatePassword changes the user's password after verifying the current one.
+// Returns ErrInvalidCredentials if the current password does not match.
+func (s *AuthService) UpdatePassword(id int64, oldPassword, newPassword string) error {
+	user, err := s.users.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	if !util.CheckPassword(user.PasswordHash, oldPassword) {
+		return ErrInvalidCredentials
+	}
+
+	hash, err := util.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+	return s.users.UpdatePasswordHash(id, hash)
 }

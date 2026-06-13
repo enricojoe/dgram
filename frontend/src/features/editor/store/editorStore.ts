@@ -63,6 +63,8 @@ interface EditorState {
   applySchemaEdit: (updater: (schema: Schema) => Schema) => void
   /** Persist a dragged node position (does not touch schema or DDL). */
   setNodePosition: (table: string, pos: XY) => void
+  /** Persist many node positions at once (e.g. snapshot before a re-layout). */
+  commitLayout: (positions: Record<string, XY>) => void
   /** Load a saved diagram into the workspace (origin 'ddl' → re-parses). */
   loadDiagram: (input: {
     ddl: string
@@ -94,6 +96,8 @@ export const useEditorStore = create<EditorState>((set) => ({
     set((state) => ({ schema: updater(state.schema), origin: 'diagram' })),
   setNodePosition: (table, pos) =>
     set((state) => ({ layout: { ...state.layout, [table]: pos } })),
+  commitLayout: (positions) =>
+    set((state) => ({ layout: { ...state.layout, ...positions } })),
   loadDiagram: ({ ddl, dialect, layout }) =>
     set({ ddl, dialect, layout: layout ?? {}, origin: 'ddl', error: null, warnings: [] }),
 }))

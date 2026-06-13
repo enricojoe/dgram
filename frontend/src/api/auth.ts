@@ -30,3 +30,17 @@ export async function getMe(): Promise<User> {
   const { data } = await api.get<User>('/me')
   return data
 }
+
+/** Update the current user's profile (display name). */
+export async function updateProfile(displayName: string): Promise<User> {
+  const { data } = await api.patch<User>('/me', { displayName })
+  return data
+}
+
+/** Change the current user's password. Requires the current password. */
+export async function changePassword(
+  oldPassword: string,
+  newPassword: string,
+): Promise<void> {
+  await api.post('/me/password', { oldPassword, newPassword })
+}

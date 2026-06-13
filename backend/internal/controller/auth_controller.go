@@ -33,6 +33,8 @@ func (a *AuthController) RegisterPublic(r *gin.RouterGroup) {
 // RegisterProtected mounts auth routes that require a valid access token.
 func (a *AuthController) RegisterProtected(r *gin.RouterGroup) {
 	r.GET("/me", a.me)
+	r.PATCH("/me", a.updateProfile)
+	r.POST("/me/password", a.changePassword)
 }
 
 type credentialsRequest struct {
@@ -145,6 +147,68 @@ func (a *AuthController) me(c *gin.Context) {
 		return
 	}
 	util.OK(c, user.View())
+}
+
+type updateProfileRequest struct {
+	DisplayName string `json:"displayName"`
+}
+
+func (a *AuthController) updateProfile(c *gin.Context) {
+	userID, ok := middleware.UserID(c)
+	if !ok {
+		util.Fail(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req updateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		util.Fail(c, http.StatusBadRequest, "invalid request body: "+err.Error())
+		return
+	}
+
+	user, err := a.auth.UpdateDisplayName(userID, req.DisplayName)
+	if err != nil {
+		util.Fail(c, http.StatusInternalServerError, "could not update profile")
+		return
+	}
+	util.OK(c, user.View())
+}
+
+type changePasswordRequest struct {
+	OldPassword string `json:"oldPassword"`
+	NewPassword string `json:"newPassword"`
+}
+
+func (a *AuthController) changePassword(c *gin.Context) {
+	userID, ok := middleware.UserID(c)
+	if !ok {
+		util.Fail(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req changePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		util.Fail(c, http.StatusBadRequest, "invalid request body: "+err.Error())
+		return
+	}
+	if req.OldPassword == "" {
+		util.Fail(c, http.StatusBadRequest, "oldPassword must not be empty")
+		return
+	}
+	if req.NewPassword == "" {
+		util.Fail(c, http.StatusBadRequest, "newPassword must not be empty")
+		return
+	}
+
+	if err := a.auth.UpdatePassword(userID, req.OldPassword, req.NewPassword); err != nil {
+		if errors.Is(err, service.ErrInvalidCredentials) {
+			util.Fail(c, http.StatusUnauthorized, "current password is incorrect")
+			return
+		}
+		util.Fail(c, http.StatusInternalServerError, "could not change password")
+		return
+	}
+	util.OK(c, gin.H{"status": "ok"})
 }
 
 // validCredentials performs basic input validation, writing a 400 and

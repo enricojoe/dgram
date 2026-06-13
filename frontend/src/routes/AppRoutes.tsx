@@ -9,6 +9,7 @@ const EditorPage = lazy(() => import('@/pages/EditorPage'))
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
+const ProfilePage = lazy(() => import('@/pages/ProfilePage'))
 const SharePage = lazy(() => import('@/pages/SharePage'))
 
 const Loading = () => (
@@ -31,6 +32,14 @@ export default function AppRoutes() {
               element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
                 </ProtectedRoute>
               }
             />

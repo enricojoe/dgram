@@ -53,7 +53,13 @@ export function schemaToFlow(schema: Schema): {
     targetHandle: targetHandle(ref.toColumn),
     type: 'smoothstep',
     label: ref.onDelete ? `ON DELETE ${ref.onDelete}` : undefined,
-    markerEnd: { type: MarkerType.ArrowClosed },
+    // Pin colors inline (rather than relying on React Flow's class-based CSS,
+    // which html-to-image drops during PNG export) so edges, labels and the
+    // arrowhead render identically on screen and in the exported image.
+    style: { stroke: '#64748b', strokeWidth: 1.5 }, // slate-500
+    labelStyle: { fill: '#334155' }, // slate-700
+    labelBgStyle: { fill: '#ffffff' },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#64748b' },
   }))
 
   return { nodes, edges }
