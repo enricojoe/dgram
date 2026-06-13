@@ -1,73 +1,82 @@
-# React + TypeScript + Vite
+# DGram — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite client for [DGram](../), a dbdiagram.io-style app:
+paste SQL DDL → interactive ER diagram, edit either side, save & share.
 
-Currently, two official plugins are available:
+Built with React Flow + dagre (diagram), CodeMirror (editor), React Query
+(server state), and Zustand (auth/UI state).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Prerequisites
 
-## React Compiler
+- Node.js 22+
+- A running DGram backend (see [`../backend`](../backend)) — or use the
+  full Docker stack ([`../docker-compose.yml`](../docker-compose.yml)).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting started
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The dev server starts on http://localhost:5400 (set by `FRONTEND_PORT` in
+`.env`; override as shown below). API calls to `/api` are proxied to the backend.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Command           | Description                                  |
+| ----------------- | -------------------------------------------- |
+| `npm run dev`     | Start the Vite dev server with HMR.          |
+| `npm run build`   | Type-check (`tsc -b`) and build to `dist/`.  |
+| `npm run preview` | Serve the production build locally.          |
+| `npm run lint`    | Run ESLint.                                  |
+
+## Configuration
+
+Environment variables are loaded by Vite from `.env` (committed defaults) and
+`.env.local` (gitignored, per-developer overrides), or from the shell.
+
+| Variable                | `.env` default          | Purpose                                                              |
+| ----------------------- | ----------------------- | ------------------------------------------------------------------- |
+| `FRONTEND_PORT`         | `5400`                  | Port the dev server (and the Docker nginx container) listens on.    |
+| `VITE_API_BASE_URL`     | `/api`                  | Base URL the client uses for API requests (baked in at build time). |
+| `VITE_API_PROXY_TARGET` | `http://localhost:8090` | Backend the dev server proxies `/api` to.                           |
+
+Only `VITE_`-prefixed variables are exposed to client code; `FRONTEND_PORT` is
+build/dev-server config only.
+
+```bash
+# One-off override
+FRONTEND_PORT=3000 npm run dev
+
+# Or persist it in .env.local
+echo "FRONTEND_PORT=3000" >> .env.local
 ```
+
+## Docker
+
+The frontend ships as an nginx image that serves the built SPA and reverse-proxies
+`/api` to the backend. nginx's listen port is templated from `FRONTEND_PORT` at
+container start. Run it as part of the full stack from the repo root:
+
+```bash
+cd .. && docker compose up
+```
+
+Then visit http://localhost:5173. Ports for every service are env-driven via the
+root `.env` (copy from [`../.env.example`](../.env.example)) — `FRONTEND_PORT`,
+`BACKEND_PORT`, and `POSTGRES_PORT`.
+
+## Project structure
+
+Feature-based layout under `src/`:
+
+```
+src/
+  features/
+    auth/       # Login/register, JWT token store
+    diagrams/   # Saved diagrams, sharing
+    editor/     # DDL editor + ER diagram canvas
+```
+
+See the [project root](../) for backend, architecture, and the overall stack.

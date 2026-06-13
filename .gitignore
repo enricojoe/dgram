@@ -1,12 +1,18 @@
 # Backend (Go)
 backend/server
 backend/*.exe
-backend/.env
 
 # Frontend (Node)
 frontend/node_modules/
 frontend/dist/
-frontend/.env*.local
+
+# Environment files — keep secrets out of git; .env.example is committed.
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
 
 # Editor / OS
 .DS_Store

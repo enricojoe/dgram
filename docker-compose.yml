@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dgram-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dgram}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dgram}
+      POSTGRES_DB: ${POSTGRES_DB:-dgram}
+    ports:
+      # Host 5434 → container 5432 (5432/5433 are used by other local DBs).
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - dgram_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dgram} -d ${POSTGRES_DB:-dgram}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: dgram-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      # Talk to Postgres over the internal compose network (container port 5432).
+      DATABASE_URL: postgres://${POSTGRES_USER:-dgram}:${POSTGRES_PASSWORD:-dgram}@postgres:5432/${POSTGRES_DB:-dgram}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+    ports:
+      # Exposed for direct API access / debugging; the frontend reaches it
+      # internally via the compose network.
+      - "${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: dgram-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      # Port nginx listens on inside the container.
+      FRONTEND_PORT: ${FRONTEND_PORT:-5173}
+    ports:
+      # Visit the app at http://localhost:${FRONTEND_PORT:-5173}
+      - "${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}"
+
+volumes:
+  dgram_pgdata:
