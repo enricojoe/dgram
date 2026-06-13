@@ -1,0 +1,2 @@
+ALTER TABLE diagrams DROP COLUMN IF EXISTS is_public;
+ALTER TABLE diagrams DROP COLUMN IF EXISTS share_id;

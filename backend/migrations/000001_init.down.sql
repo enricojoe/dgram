@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS diagrams;
+DROP TABLE IF EXISTS users;

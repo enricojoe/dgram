@@ -1,0 +1,2 @@
+ALTER TABLE diagrams ADD COLUMN share_id TEXT UNIQUE;
+ALTER TABLE diagrams ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT false;
